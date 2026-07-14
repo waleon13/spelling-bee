@@ -45,6 +45,10 @@ en `index.html`. Publicada en GitHub Pages.
   (evita que se corte la primera letra al presionar "Escuchar"); ella la dispara
   con el botón. El margen entre `cancel()` y `speak()` en `say()` es de 250 ms
   por la misma razón. Al navegar entre palabras sí se pronuncia automáticamente.
+- Audio (deletreo): al pasar de un audio a otro (ej. oír la palabra y luego
+  "Deletrear") se cortaba la primera letra. `spellOut` usa `settleSpeech()`, que
+  espera a que el motor quede realmente libre (sondeando, con tope de seguridad)
+  antes de decir la primera letra, en vez de una pausa fija corta.
 - En Aprender, "Anterior" se deshabilita en la primera palabra.
 
 ## Probar

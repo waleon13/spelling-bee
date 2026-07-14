@@ -490,9 +490,26 @@ function say(text, rate=0.6){
 }
 function stopSpeech(){ if(hasTTS) speechSynthesis.cancel(); }
 
+/* Tras cortar el audio, espera a que el motor de voz quede realmente libre
+   (sondeando, con un tope de seguridad) y luego una pausa corta. Así el
+   deletreo no se come la primera letra cuando venías de oír la palabra. */
+function settleSpeech(){
+  return new Promise(res=>{
+    let intentos = 0;
+    const revisar = ()=>{
+      if(!hasTTS || !speechSynthesis.speaking || intentos++ > 20){
+        setTimeout(res, 250);
+      } else {
+        setTimeout(revisar, 25);
+      }
+    };
+    revisar();
+  });
+}
+
 async function spellOut(word, revealEl){
   stopSpeech();
-  await new Promise(r=>setTimeout(r,150));
+  await settleSpeech();
   if(revealEl){
     revealEl.innerHTML = word.split("").map(l=>`<span>${l.toUpperCase()}</span>`).join(" ");
   }

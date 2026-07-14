@@ -524,12 +524,12 @@ const LETTER_SOUNDS = {
   f:"f", ef:"f", eff:"f",
   g:"g", gee:"g", ji:"g",
   h:"h", aitch:"h", age:"h", eich:"h",
-  i:"i", eye:"i", ai:"i",
+  i:"i", eye:"i", ai:"i", aye:"i",
   j:"j", jay:"j", jei:"j",
   k:"k", kay:"k", que:"k", kei:"k",
   l:"l", el:"l", ell:"l", elle:"l",
-  m:"m", em:"m",
-  n:"n", en:"n",
+  m:"m", em:"m", am:"m",
+  n:"n", en:"n", an:"n", and:"n",
   o:"o", oh:"o", owe:"o",
   p:"p", pee:"p", pea:"p", pi:"p",
   q:"q", queue:"q", cue:"q", kyu:"q",
@@ -543,17 +543,29 @@ const LETTER_SOUNDS = {
   y:"y", why:"y", wai:"y",
   z:"z", zee:"z", zed:"z", zi:"z"
 };
-function transcriptToLetters(t){
+function normalizeTokens(t){
   t = t.toLowerCase()
        .replace(/double\s*(u|you)/g," doubleu ")
        .replace(/[^a-z\s]/g," ");
-  const tokens = t.split(/\s+/).filter(Boolean);
-  let letters = "", unknown = [];
+  return t.split(/\s+/).filter(Boolean);
+}
+/* Decodifica lo escuchado usando la palabra objetivo como guía:
+   los reconocedores oyen mal las letras sueltas ("see" por C, "cat" por C-A-T),
+   así que resolvemos ambigüedades contra la palabra que esperamos. */
+function decodeAgainst(word, transcript){
+  const tokens = normalizeTokens(transcript);
+  let out = "";
   for(const tok of tokens){
-    if(LETTER_SOUNDS[tok]) letters += LETTER_SOUNDS[tok];
-    else unknown.push(tok);
+    if(tok.length === 1){ out += tok; continue; }
+    if(LETTER_SOUNDS[tok]){ out += LETTER_SOUNDS[tok]; continue; }
+    const pos = out.length;
+    /* letras fusionadas: "gl" o "lad" encajan en la posición esperada */
+    if(word.slice(pos, pos + tok.length) === tok){ out += tok; continue; }
+    /* el sonido empieza con la letra esperada */
+    if(word[pos] && tok[0] === word[pos]){ out += word[pos]; continue; }
+    out += "?";
   }
-  return {letters, tokens, unknown};
+  return {letters: out, tokens};
 }
 
 let recog = null, listening = false, voiceFinal = "";
@@ -576,17 +588,33 @@ function startMic(){
   recog.lang = "en-US";
   recog.continuous = true;
   recog.interimResults = true;
+  recog.maxAlternatives = 5;
   voiceFinal = "";
   const heard = document.getElementById("heardBox");
   heard.className = "heard empty";
-  heard.textContent = "Te escucho: deletrea letra por letra";
+  heard.textContent = "Di cada letra y espera a verla antes de la siguiente";
   recog.onresult = (e)=>{
+    const word = WORDS[spellOrder[spellIdx]][0];
     let interim = "";
     for(let i=e.resultIndex;i<e.results.length;i++){
-      if(e.results[i].isFinal) voiceFinal += " " + e.results[i][0].transcript;
-      else interim += e.results[i][0].transcript;
+      const res = e.results[i];
+      if(res.isFinal){
+        /* elegir la alternativa que mejor se convierte en letras de la palabra */
+        let best = res[0].transcript, bestScore = -1;
+        for(let j=0;j<res.length;j++){
+          const d = decodeAgainst(word, res[j].transcript).letters;
+          let score = (d === word) ? 100 : 0;
+          for(let k=0;k<d.length && k<word.length;k++){
+            if(d[k] === word[k]) score++; else break;
+          }
+          if(score > bestScore){ bestScore = score; best = res[j].transcript; }
+        }
+        voiceFinal += " " + best;
+      } else {
+        interim += res[0].transcript + " ";
+      }
     }
-    const {letters} = transcriptToLetters(voiceFinal + " " + interim);
+    const {letters} = decodeAgainst(word, voiceFinal + " " + interim);
     if(letters){
       heard.className = "heard";
       heard.textContent = letters.toUpperCase().split("").join("-");
@@ -621,21 +649,35 @@ function stopMicUI(){
 }
 function gradeVoice(){
   const word = WORDS[spellOrder[spellIdx]][0];
-  const {letters, tokens} = transcriptToLetters(voiceFinal);
+  const {letters, tokens} = decodeAgainst(word, voiceFinal);
   const fb = document.getElementById("spellFeedback");
   if(!tokens.length){
     fb.textContent = "No escuché nada. Acércate al micrófono e intenta otra vez.";
     fb.className = "feedback no";
     return;
   }
-  if(!letters && tokens.join("") === word){
+  if(tokens.length === 1 && tokens[0] === word){
     fb.textContent = "Escuché la palabra completa. Ahora deletréala: letra por letra, como en el concurso.";
     fb.className = "feedback no";
+    voiceFinal = "";
     return;
   }
-  document.getElementById("heardBox").className = "heard";
-  document.getElementById("heardBox").textContent = letters.toUpperCase().split("").join("-");
-  applyAnswer(letters === word);
+  const heard = document.getElementById("heardBox");
+  heard.className = "heard";
+  heard.textContent = letters.toUpperCase().split("").join("-");
+  if(letters === word){
+    applyAnswer(true);
+    return;
+  }
+  if(letters.includes("?")){
+    /* el micrófono no entendió alguna letra: no cuenta como intento fallido */
+    document.getElementById("spellInput").value = letters.replace(/\?/g,"");
+    fb.textContent = "No entendí algunas letras (?). Corrige con el teclado y toca Revisar, o intenta con tu voz de nuevo.";
+    fb.className = "feedback no";
+    voiceFinal = "";
+    return;
+  }
+  applyAnswer(false);
 }
 
 /* ================= MODO 2: DELETREAR ================= */

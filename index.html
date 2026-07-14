@@ -99,14 +99,22 @@
   .btn{
     font-family:'Nunito';font-weight:800;font-size:1rem;
     border:1px solid transparent;border-radius:12px;padding:13px 20px;cursor:pointer;
-    color:#fff;transition:filter .12s ease;
+    color:#fff;transition:filter .12s ease, transform .08s ease;
     margin:6px 4px 0;
   }
-  .btn:active{filter:brightness(.92)}
+  .btn:active{filter:brightness(.9);transform:scale(.96)}
   .btn-honey{background:var(--honey)}
   .btn-green{background:var(--green)}
   .btn-ghost{background:var(--card);color:var(--ink);border-color:var(--line);box-shadow:var(--shadow)}
-  .btn:disabled{opacity:.4;cursor:default;filter:none}
+  .btn:disabled{opacity:.4;cursor:default;filter:none;transform:none}
+
+  /* Feedback al tocar: un pulso que confirma que el botón registró el toque.
+     Se aplica por JS (clase .tapped) a botones, modos, letras y opciones. */
+  .tapped{animation:tapPulse .45s ease-out}
+  @keyframes tapPulse{
+    0%{box-shadow:0 0 0 0 rgba(242,169,0,.55)}
+    100%{box-shadow:0 0 0 12px rgba(242,169,0,0)}
+  }
 
   /* ---------- Mi progreso ---------- */
   .stat-list{display:grid;text-align:left}
@@ -582,9 +590,11 @@ function startLearn(){
   learnOrder = shuffle(WORDS.map((_,i)=>i));
   learnIdx = 0;
   show("learn");
-  renderLearn(false); // al entrar no decimos la palabra sola: ella presiona "Escuchar"
+  renderLearn();
 }
-function renderLearn(autoSay=true){
+/* En Aprender el audio NUNCA se dispara solo (ni al entrar ni al pasar entre
+   palabras): la niña lo controla con los botones "Escuchar" / "Despacio". */
+function renderLearn(){
   const [w,m] = WORDS[learnOrder[learnIdx]];
   document.getElementById("learnWord").textContent = w;
   document.getElementById("learnMeaning").textContent = m;
@@ -594,7 +604,6 @@ function renderLearn(autoSay=true){
   document.getElementById("learnPrev").disabled = (learnIdx === 0);
   learnHeardThisWord = false;
   drawHex("learnHex", WORDS.length, learnIdx, new Set(Array.from({length:learnIdx},(_,i)=>i)));
-  if(autoSay) say(w);
 }
 /* Cuenta la palabra como "escuchada" solo la primera vez en esta visita. */
 function countLearnHeard(){
@@ -719,6 +728,17 @@ function spellAdvance(){
 }
 document.getElementById("spellInput").addEventListener("keydown", e=>{
   if(e.key === "Enter" && !e.target.disabled) checkSpell();
+});
+
+/* Pulso de confirmación al tocar cualquier control (funciona también con los
+   botones que se crean al vuelo, gracias a la delegación en document). */
+document.addEventListener("click", e=>{
+  const el = e.target.closest(".btn, .mode-btn, .abc-chip, .opt, .back, .word-chip, .close-picker");
+  if(!el || el.disabled) return;
+  el.classList.remove("tapped");
+  void el.offsetWidth; // reinicia la animación si se vuelve a tocar rápido
+  el.classList.add("tapped");
+  setTimeout(()=>el.classList.remove("tapped"), 470);
 });
 
 /* ================= MODO 3: QUIZ ================= */

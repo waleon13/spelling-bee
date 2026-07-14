@@ -41,10 +41,14 @@ en `index.html`. Publicada en GitHub Pages.
 - Las estrellas y estadísticas **se guardan** en `localStorage`. El botón
   "Reiniciar estrellas" (pantalla Mi progreso) pone `stars` en 0 pero **no**
   borra las estadísticas.
-- Audio: al **entrar** a Escuchar y aprender la app **no** dice la palabra sola
-  (evita que se corte la primera letra al presionar "Escuchar"); ella la dispara
-  con el botón. El margen entre `cancel()` y `speak()` en `say()` es de 250 ms
-  por la misma razón. Al navegar entre palabras sí se pronuncia automáticamente.
+- Audio: en Escuchar y aprender el audio **nunca se dispara solo** (ni al entrar
+  ni al pasar entre palabras con Anterior/Siguiente); la niña lo controla con
+  "Escuchar" / "Despacio". Evita que dos audios choquen y se corte la primera
+  letra. El margen entre `cancel()` y `speak()` en `say()` es de 250 ms. Nota:
+  en Deletrear y Quiz sí se pronuncia la palabra al cargar (ahí es necesario).
+- Feedback táctil: un listener delegado en `document` agrega la clase `.tapped`
+  (animación `tapPulse`) a botones, modos, letras y opciones al tocarlos, para
+  que se note que el toque registró.
 - Audio (deletreo): al pasar de un audio a otro (ej. oír la palabra y luego
   "Deletrear") se cortaba la primera letra. `spellOut` usa `settleSpeech()`, que
   espera a que el motor quede realmente libre (sondeando, con tope de seguridad)

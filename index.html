@@ -138,6 +138,28 @@
   .reveal span{opacity:.25;transition:opacity .15s}
   .reveal span.lit{opacity:1}
 
+  /* ---------- Pronunciación (cómo se dice) ---------- */
+  .pron{
+    margin-top:10px;font-family:'Nunito';font-weight:800;
+    color:var(--muted);font-size:1rem;min-height:1.2em;
+  }
+  .pron b{color:var(--honey);letter-spacing:.02em}
+
+  /* ---------- Abecedario ---------- */
+  .abc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:16px}
+  @media (min-width:420px){.abc-grid{grid-template-columns:repeat(3,1fr)}}
+  .abc-chip{
+    display:flex;align-items:center;gap:12px;
+    background:#FAFCFE;border:1px solid var(--line);border-radius:12px;
+    padding:12px 14px;cursor:pointer;text-align:left;
+  }
+  .abc-chip:active{background:#F6F9FD}
+  .abc-letter{
+    font-family:'Baloo 2';font-weight:800;font-size:1.6rem;color:var(--ink);
+    width:1.2em;text-align:center;flex-shrink:0;
+  }
+  .abc-sound{font-family:'Nunito';font-weight:800;font-size:1.05rem;color:var(--honey)}
+
   /* ---------- Quiz ---------- */
   .options{display:grid;gap:10px;margin-top:18px}
   .opt{
@@ -227,6 +249,10 @@
         <span class="chip" style="background:var(--ink)"></span>
         <span><h3>Quiz de significados</h3><p>Qué significa la palabra en español</p></span>
       </button>
+      <button class="mode-btn" onclick="startAlphabet()">
+        <span class="chip" style="background:#7FA8D9"></span>
+        <span><h3>El abecedario</h3><p>Aprende a decir cada letra en inglés</p></span>
+      </button>
     </div>
   </section>
 
@@ -240,6 +266,7 @@
     <div class="card">
       <div class="big-word" id="learnWord"></div>
       <div class="meaning" id="learnMeaning"></div>
+      <div class="pron" id="learnPron"></div>
       <div class="nav-row">
         <button class="btn btn-honey" onclick="sayCurrentLearn()">Escuchar</button>
         <button class="btn btn-ghost" onclick="sayCurrentLearnSlow()">Despacio</button>
@@ -275,6 +302,7 @@
       </div>
       <div class="feedback" id="spellFeedback" aria-live="polite"></div>
       <div class="reveal" id="spellReveal" aria-live="polite"></div>
+      <div class="pron" id="spellPron"></div>
       <div class="nav-row" id="spellActions">
         <button class="btn btn-green" id="checkBtn" onclick="checkSpell()">Revisar</button>
       </div>
@@ -295,6 +323,21 @@
       <div class="options" id="quizOptions"></div>
       <div class="feedback" id="quizFeedback" aria-live="polite"></div>
       <div class="nav-row"><button class="btn btn-green" id="quizNext" style="display:none" onclick="quizAdvance()">Siguiente →</button></div>
+    </div>
+  </section>
+
+  <!-- ============ ABECEDARIO ============ -->
+  <section id="alphabet" class="screen">
+    <div class="topbar">
+      <button class="back" onclick="goHome()">← Menú</button>
+      <span class="progress">El abecedario</span>
+    </div>
+    <div class="card">
+      <h3 class="display">Toca una letra para oírla</h3>
+      <div class="nav-row">
+        <button class="btn btn-honey" onclick="sayWholeAlphabet()">Escuchar todo</button>
+      </div>
+      <div class="abc-grid" id="abcGrid"></div>
     </div>
   </section>
 
@@ -337,6 +380,18 @@ const WORDS = [
   ["plum","ciruela"],["been","estado / sido"],["grape","uva"],["rose","rosa"],["tape","cinta"],
   ["said","dijo"],["wet","mojado"],["prize","premio"],["pole","poste"],["fin","aleta"]
 ];
+
+/* Nombre de cada letra en inglés, escrito para leerlo en español.
+   Ej: "just" -> jei-iu-es-ti */
+const LETTER_SOUND = {
+  a:"ei",  b:"bi",  c:"si",  d:"di",  e:"i",   f:"ef",  g:"yi",  h:"eich",
+  i:"ai",  j:"jei", k:"kei", l:"el",  m:"em",  n:"en",  o:"ou",  p:"pi",
+  q:"kiu", r:"ar",  s:"es",  t:"ti",  u:"iu",  v:"vi",  w:"dobol-iu",
+  x:"eks", y:"uai", z:"zi"
+};
+function pronounce(word){
+  return word.toLowerCase().split("").map(l=>LETTER_SOUND[l]||l).join("-");
+}
 
 let stars = 0;
 let lastMode = null;
@@ -470,6 +525,7 @@ function renderLearn(){
   const [w,m] = WORDS[learnOrder[learnIdx]];
   document.getElementById("learnWord").textContent = w;
   document.getElementById("learnMeaning").textContent = m;
+  document.getElementById("learnPron").innerHTML = "Se dice: <b>" + pronounce(w) + "</b>";
   document.getElementById("learnReveal").innerHTML = "";
   document.getElementById("learnProg").textContent = `Palabra ${learnIdx+1} de ${WORDS.length}`;
   drawHex("learnHex", WORDS.length, learnIdx, new Set(Array.from({length:learnIdx},(_,i)=>i)));
@@ -525,6 +581,7 @@ function renderSpell(){
   document.getElementById("spellFeedback").textContent = "";
   document.getElementById("spellFeedback").className = "feedback";
   document.getElementById("spellReveal").innerHTML = "";
+  document.getElementById("spellPron").innerHTML = "";
   const hint = document.getElementById("spellHint");
   hint.style.visibility = "hidden";
   hint.textContent = WORDS[spellOrder[spellIdx]][1];
@@ -549,6 +606,7 @@ function applyAnswer(ok){
   const fb = document.getElementById("spellFeedback");
   if(ok){
     card.classList.remove("bad"); card.classList.add("good");
+    document.getElementById("spellPron").innerHTML = "Se dice: <b>" + pronounce(word) + "</b>";
     fb.textContent = spellTries===0 ? "Perfecto, a la primera. Ganaste 2 estrellas." : "Muy bien. Ganaste 1 estrella.";
     fb.className = "feedback ok";
     addStar(spellTries===0 ? 2 : 1);
@@ -570,6 +628,7 @@ function applyAnswer(ok){
       fb.textContent = "Así se escribe. Escúchala y pasa a la siguiente.";
       fb.className = "feedback no";
       document.getElementById("spellInput").disabled = true;
+      document.getElementById("spellPron").innerHTML = "Se dice: <b>" + pronounce(word) + "</b>";
       spellOut(word, document.getElementById("spellReveal"));
       document.getElementById("spellActions").innerHTML =
         '<button class="btn btn-ghost" onclick="spellOut(WORDS[spellOrder[spellIdx]][0], document.getElementById(\'spellReveal\'))">Deletrear de nuevo</button>' +
@@ -647,6 +706,33 @@ function quizAdvance(){
   }
   quizIdx++;
   renderQuiz();
+}
+
+/* ================= MODO 4: ABECEDARIO ================= */
+const ALPHABET = "abcdefghijklmnopqrstuvwxyz".split("");
+function startAlphabet(){
+  lastMode = "alphabet";
+  show("alphabet");
+  renderAlphabet();
+}
+function renderAlphabet(){
+  const grid = document.getElementById("abcGrid");
+  grid.innerHTML = "";
+  ALPHABET.forEach(l=>{
+    const b = document.createElement("button");
+    b.className = "abc-chip";
+    b.innerHTML = `<span class="abc-letter">${l.toUpperCase()}</span><span class="abc-sound">${LETTER_SOUND[l]}</span>`;
+    b.onclick = ()=>say(l);
+    grid.appendChild(b);
+  });
+}
+async function sayWholeAlphabet(){
+  stopSpeech();
+  await new Promise(r=>setTimeout(r,150));
+  for(const l of ALPHABET){
+    await speak(l, 0.7);
+    await new Promise(r=>setTimeout(r,250));
+  }
 }
 </script>
 </body>

@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi Spelling Bee</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EFF4FA;
+    --ink:#28324A;
+    --muted:#68789B;
+    --line:#DDE5F0;
+    --card:#FFFFFF;
+    --honey:#F2A900;
+    --honey-soft:#FCEFCC;
+    --green:#2E9E58;
+    --green-soft:#E4F4EA;
+    --red:#D95757;
+    --red-soft:#FBE7E7;
+    --shadow:0 1px 3px rgba(40,50,74,.08);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{
+    font-family:'Nunito',sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    min-height:100vh;
+    display:flex;flex-direction:column;align-items:center;
+    padding:16px;
+  }
+  h1,h2,h3,.display{font-family:'Baloo 2',sans-serif}
+  .app{width:100%;max-width:520px}
+
+  /* ---------- Header ---------- */
+  header{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:16px;
+  }
+  .brand{display:flex;align-items:center;gap:10px}
+  .bee{font-size:1.8rem;line-height:1}
+  .brand h1{font-size:1.4rem;line-height:1.1}
+  .brand small{font-weight:700;color:var(--muted);font-size:.8rem;display:block}
+  .stars{
+    background:var(--card);border:1px solid var(--line);border-radius:999px;
+    padding:8px 16px;font-weight:800;font-size:1rem;box-shadow:var(--shadow);
+  }
+  .stars b{color:var(--honey)}
+
+  /* ---------- Screens ---------- */
+  .screen{display:none}
+  .screen.active{display:block;animation:fade .2s ease}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important}
+  }
+
+  /* ---------- Home ---------- */
+  .hero{
+    text-align:center;background:var(--card);border:1px solid var(--line);
+    border-radius:16px;padding:22px 18px;margin-bottom:14px;box-shadow:var(--shadow);
+  }
+  .hero h2{font-size:1.35rem;margin-bottom:4px}
+  .hero p{font-weight:700;color:var(--muted);font-size:.95rem}
+  .modes{display:grid;gap:10px}
+  .mode-btn{
+    display:flex;align-items:center;gap:14px;width:100%;
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:18px;cursor:pointer;text-align:left;box-shadow:var(--shadow);
+    transition:background .12s ease;
+  }
+  .mode-btn:active{background:#F6F9FD}
+  .mode-btn:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid var(--honey);outline-offset:2px}
+  .chip{width:12px;height:12px;border-radius:4px;flex-shrink:0}
+  .mode-btn h3{font-size:1.1rem}
+  .mode-btn p{font-weight:700;color:var(--muted);font-size:.85rem}
+
+  /* ---------- Common in-mode ---------- */
+  .topbar{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+  .back{
+    background:var(--card);border:1px solid var(--line);border-radius:999px;
+    padding:9px 16px;font-family:'Nunito';font-weight:800;font-size:.9rem;
+    cursor:pointer;box-shadow:var(--shadow);color:var(--ink);
+  }
+  .progress{font-weight:800;color:var(--muted);font-size:.9rem;margin-left:auto}
+
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:26px 20px;box-shadow:var(--shadow);text-align:center;
+  }
+  .card h3{font-size:1.2rem}
+
+  .big-word{font-family:'Baloo 2';font-size:3rem;font-weight:800;letter-spacing:.04em}
+  .meaning{
+    display:inline-block;margin-top:8px;background:var(--honey-soft);
+    border-radius:999px;padding:7px 16px;font-weight:800;font-size:1rem;
+  }
+
+  .btn{
+    font-family:'Nunito';font-weight:800;font-size:1rem;
+    border:1px solid transparent;border-radius:12px;padding:13px 20px;cursor:pointer;
+    color:#fff;transition:filter .12s ease;
+    margin:6px 4px 0;
+  }
+  .btn:active{filter:brightness(.92)}
+  .btn-honey{background:var(--honey)}
+  .btn-green{background:var(--green)}
+  .btn-ghost{background:var(--card);color:var(--ink);border-color:var(--line);box-shadow:var(--shadow)}
+
+  .nav-row{display:flex;justify-content:center;gap:8px;margin-top:16px;flex-wrap:wrap}
+
+  /* honeycomb progress */
+  .hex-row{display:flex;justify-content:center;gap:5px;margin-top:16px;flex-wrap:wrap}
+  .hex{
+    width:14px;height:14px;background:var(--line);
+    clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);
+  }
+  .hex.done{background:var(--honey)}
+  .hex.now{background:var(--ink)}
+
+  /* ---------- Spell mode ---------- */
+  .spell-input{
+    font-family:'Baloo 2';font-size:1.9rem;font-weight:700;text-align:center;
+    width:100%;max-width:320px;padding:12px;margin-top:14px;
+    border:1px solid var(--line);border-radius:12px;color:var(--ink);
+    letter-spacing:.15em;text-transform:lowercase;background:#FAFCFE;
+  }
+  .card.good{border-color:var(--green);background:var(--green-soft)}
+  .card.bad{animation:shake .35s ease;border-color:var(--red)}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+  .feedback{margin-top:12px;font-weight:800;font-size:1.05rem;min-height:1.5em}
+  .feedback.ok{color:var(--green)}
+  .feedback.no{color:var(--red)}
+  .reveal{
+    margin-top:10px;font-family:'Baloo 2';font-size:1.8rem;font-weight:800;
+    letter-spacing:.2em;color:var(--honey);min-height:1.3em;
+  }
+  .reveal span{opacity:.25;transition:opacity .15s}
+  .reveal span.lit{opacity:1}
+
+  #micBtn.listening{background:var(--red)}
+  #micBtn.listening::after{content:"";display:inline-block;width:8px;height:8px;
+    border-radius:50%;background:#fff;margin-left:8px;vertical-align:middle;
+    animation:blink 1s ease-in-out infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+  .heard{
+    margin-top:12px;min-height:1.6em;
+    font-family:'Baloo 2';font-size:1.5rem;font-weight:700;
+    letter-spacing:.25em;color:var(--ink);
+  }
+  .heard.empty{font-family:'Nunito';font-size:.9rem;letter-spacing:0;color:var(--muted);font-weight:700}
+
+  /* ---------- Quiz ---------- */
+  .options{display:grid;gap:10px;margin-top:18px}
+  .opt{
+    background:#FAFCFE;border:1px solid var(--line);border-radius:12px;
+    padding:14px;font-family:'Nunito';font-weight:800;font-size:1rem;
+    cursor:pointer;color:var(--ink);
+  }
+  .opt.correct{background:var(--green-soft);border-color:var(--green)}
+  .opt.wrong{background:var(--red-soft);border-color:var(--red)}
+  .opt:disabled{cursor:default}
+
+  /* ---------- Confetti ---------- */
+  .confetti{
+    position:fixed;top:-14px;width:9px;height:14px;border-radius:2px;
+    pointer-events:none;z-index:99;animation:fall linear forwards;
+  }
+  @keyframes fall{to{transform:translateY(105vh) rotate(480deg);opacity:.5}}
+
+  .final{
+    text-align:center;background:var(--card);border:1px solid var(--honey);
+    border-radius:16px;padding:30px 20px;box-shadow:var(--shadow);
+  }
+  .final .display{font-size:1.6rem;margin-bottom:6px}
+  .final p{font-weight:800;color:var(--muted)}
+
+  /* ---------- Selector de palabras ---------- */
+  .overlay{
+    position:fixed;inset:0;background:rgba(40,50,74,.4);
+    display:none;align-items:flex-end;justify-content:center;z-index:50;
+  }
+  .overlay.open{display:flex}
+  .picker{
+    background:var(--card);border-radius:16px 16px 0 0;
+    width:100%;max-width:520px;max-height:80vh;
+    padding:18px 16px 24px;overflow-y:auto;
+  }
+  .picker-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .picker-head h3{font-size:1.15rem}
+  .close-picker{
+    background:#F3F6FB;border:1px solid var(--line);border-radius:999px;
+    width:36px;height:36px;font-size:1rem;font-weight:800;
+    cursor:pointer;color:var(--ink);
+  }
+  .word-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  @media (min-width:420px){.word-grid{grid-template-columns:repeat(4,1fr)}}
+  .word-chip{
+    background:#FAFCFE;border:1px solid var(--line);border-radius:10px;
+    padding:10px 4px;font-family:'Baloo 2';font-weight:700;font-size:1rem;
+    cursor:pointer;color:var(--ink);text-align:center;
+  }
+  .word-chip.current{background:var(--honey-soft);border-color:var(--honey)}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="brand">
+      <span class="bee" aria-hidden="true">🐝</span>
+      <h1>Mi Spelling Bee<small>A practicar, campeona</small></h1>
+    </div>
+    <div class="stars" aria-label="Estrellas ganadas"><b>★</b> <span id="starCount">0</span></div>
+  </header>
+
+  <!-- ============ HOME ============ -->
+  <section id="home" class="screen active">
+    <div class="hero">
+      <h2>Hola</h2>
+      <p>Tienes <strong>50 palabras</strong> para practicar.<br>Elige cómo quieres jugar hoy:</p>
+    </div>
+    <div class="modes">
+      <button class="mode-btn" onclick="startLearn()">
+        <span class="chip" style="background:var(--honey)"></span>
+        <span><h3>Escuchar y aprender</h3><p>Oye cada palabra, su deletreo y su significado</p></span>
+      </button>
+      <button class="mode-btn" onclick="startSpell()">
+        <span class="chip" style="background:var(--green)"></span>
+        <span><h3>Deletrear</h3><p>Escucha la palabra y deletréala con tu voz</p></span>
+      </button>
+      <button class="mode-btn" onclick="startQuiz()">
+        <span class="chip" style="background:var(--ink)"></span>
+        <span><h3>Quiz de significados</h3><p>Qué significa la palabra en español</p></span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ============ LEARN ============ -->
+  <section id="learn" class="screen">
+    <div class="topbar">
+      <button class="back" onclick="goHome()">← Menú</button>
+      <button class="back" onclick="openPicker()">Lista</button>
+      <span class="progress" id="learnProg"></span>
+    </div>
+    <div class="card">
+      <div class="big-word" id="learnWord"></div>
+      <div class="meaning" id="learnMeaning"></div>
+      <div class="nav-row">
+        <button class="btn btn-honey" onclick="sayCurrentLearn()">Escuchar</button>
+        <button class="btn btn-ghost" onclick="sayCurrentLearnSlow()">Despacio</button>
+        <button class="btn btn-ghost" onclick="spellCurrentLearn()">Deletrear</button>
+      </div>
+      <div class="reveal" id="learnReveal" aria-live="polite"></div>
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="learnMove(-1)">← Anterior</button>
+        <button class="btn btn-green" onclick="learnMove(1)">Siguiente →</button>
+      </div>
+    </div>
+    <div class="hex-row" id="learnHex"></div>
+  </section>
+
+  <!-- ============ SPELL ============ -->
+  <section id="spell" class="screen">
+    <div class="topbar">
+      <button class="back" onclick="goHome()">← Menú</button>
+      <span class="progress" id="spellProg"></span>
+    </div>
+    <div class="card" id="spellCard">
+      <h3 class="display">Escucha y deletrea la palabra</h3>
+      <div class="nav-row">
+        <button class="btn btn-honey" onclick="sayCurrentSpell()">Escuchar otra vez</button>
+        <button class="btn btn-ghost" onclick="sayCurrentSpellSlow()">Despacio</button>
+        <button class="btn btn-ghost" onclick="showHint()">Pista</button>
+      </div>
+      <div class="meaning" id="spellHint" style="visibility:hidden">?</div>
+      <div class="nav-row">
+        <button class="btn btn-green" id="micBtn" onclick="toggleMic()">Deletrear con mi voz</button>
+      </div>
+      <div class="heard" id="heardBox"></div>
+      <div>
+        <input class="spell-input" id="spellInput" type="text" autocomplete="off"
+               autocorrect="off" autocapitalize="none" spellcheck="false"
+               aria-label="O escribe la palabra aquí" placeholder="o escribe aquí">
+      </div>
+      <div class="feedback" id="spellFeedback" aria-live="polite"></div>
+      <div class="reveal" id="spellReveal" aria-live="polite"></div>
+      <div class="nav-row" id="spellActions">
+        <button class="btn btn-green" id="checkBtn" onclick="checkSpell()">Revisar</button>
+      </div>
+    </div>
+    <div class="hex-row" id="spellHex"></div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section id="quiz" class="screen">
+    <div class="topbar">
+      <button class="back" onclick="goHome()">← Menú</button>
+      <span class="progress" id="quizProg"></span>
+    </div>
+    <div class="card">
+      <p style="font-weight:800;color:var(--muted)">¿Qué significa…?</p>
+      <div class="big-word" id="quizWord"></div>
+      <button class="btn btn-honey" onclick="sayCurrentQuiz()">Escuchar</button>
+      <div class="options" id="quizOptions"></div>
+      <div class="feedback" id="quizFeedback" aria-live="polite"></div>
+      <div class="nav-row"><button class="btn btn-green" id="quizNext" style="display:none" onclick="quizAdvance()">Siguiente →</button></div>
+    </div>
+  </section>
+
+  <!-- ============ FINAL ============ -->
+  <section id="done" class="screen">
+    <div class="final">
+      <h2 class="display">¡Lo lograste!</h2>
+      <p id="doneMsg"></p>
+      <div class="nav-row">
+        <button class="btn btn-honey" onclick="repeatMode()">Jugar otra vez</button>
+        <button class="btn btn-ghost" onclick="goHome()">Menú</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ============ SELECTOR DE PALABRAS ============ -->
+<div class="overlay" id="pickerOverlay" onclick="if(event.target===this)closePicker()">
+  <div class="picker" role="dialog" aria-label="Elegir palabra">
+    <div class="picker-head">
+      <h3>Elige una palabra</h3>
+      <button class="close-picker" onclick="closePicker()" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="word-grid" id="wordGrid"></div>
+  </div>
+</div>
+
+<script>
+/* ================= DATA ================= */
+const WORDS = [
+  ["glad","contento / feliz"],["of","de"],["job","trabajo"],["wipe","limpiar"],["close","cerrar / cerca"],
+  ["dig","cavar"],["does","hace (él o ella)"],["hug","abrazo"],["pile","montón"],["cute","lindo / linda"],
+  ["jam","mermelada"],["cake","pastel"],["rest","descansar"],["rake","rastrillo"],["those","esos / esas"],
+  ["sad","triste"],["mine","mío / mía"],["spot","mancha / lugar"],["give","dar"],["mule","mula"],
+  ["list","lista"],["plate","plato"],["mud","lodo"],["have","tener"],["one","uno"],
+  ["win","ganar"],["size","tamaño"],["just","solo / justo"],["these","estos / estas"],["love","amor"],
+  ["flat","plano"],["was","era / estaba"],["help","ayudar"],["nose","nariz"],["come","venir"],
+  ["if","si"],["want","querer"],["ate","comió"],["use","usar"],["tap","tocar / grifo"],
+  ["plum","ciruela"],["been","estado / sido"],["grape","uva"],["rose","rosa"],["tape","cinta"],
+  ["said","dijo"],["wet","mojado"],["prize","premio"],["pole","poste"],["fin","aleta"]
+];
+
+let stars = 0;
+let lastMode = null;
+
+/* ================= VOZ (síntesis) — con arreglos para iOS Safari ================= */
+const hasTTS = "speechSynthesis" in window;
+let enVoice = null;
+let liveUtterances = []; // evita que iOS descarte las frases a medio decir
+
+function pickVoice(){
+  if(!hasTTS) return;
+  const vs = speechSynthesis.getVoices();
+  enVoice = vs.find(v=>v.lang==="en-US") || vs.find(v=>v.lang && v.lang.startsWith("en")) || null;
+}
+if(hasTTS){
+  pickVoice();
+  speechSynthesis.onvoiceschanged = pickVoice;
+}
+
+/* iOS solo permite audio tras un toque del usuario: "despertamos" el motor
+   de voz con el primer toque para que las siguientes frases salgan completas. */
+let primed = false;
+function primeSpeech(){
+  if(primed || !hasTTS) return;
+  primed = true;
+  const u = new SpeechSynthesisUtterance(" ");
+  u.volume = 0;
+  speechSynthesis.speak(u);
+}
+document.addEventListener("pointerdown", primeSpeech, {once:true});
+
+function speak(text, rate=0.6){
+  return new Promise(res=>{
+    if(!hasTTS){ res(); return; }
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "en-US";
+    if(enVoice) u.voice = enVoice;
+    u.rate = rate;
+    const done = ()=>{ liveUtterances = liveUtterances.filter(x=>x!==u); res(); };
+    u.onend = done; u.onerror = done;
+    liveUtterances.push(u);
+    speechSynthesis.speak(u);
+  });
+}
+/* Cancelar y hablar de inmediato recorta el audio en iOS:
+   dejamos una pausa breve entre ambos. */
+function say(text, rate=0.6){
+  if(!hasTTS) return;
+  speechSynthesis.cancel();
+  setTimeout(()=>speak(text, rate), 150);
+}
+function stopSpeech(){ if(hasTTS) speechSynthesis.cancel(); }
+
+async function spellOut(word, revealEl){
+  stopSpeech();
+  await new Promise(r=>setTimeout(r,150));
+  if(revealEl){
+    revealEl.innerHTML = word.split("").map(l=>`<span>${l.toUpperCase()}</span>`).join(" ");
+  }
+  const spans = revealEl ? revealEl.querySelectorAll("span") : [];
+  for(let i=0;i<word.length;i++){
+    if(spans[i]) spans[i].classList.add("lit");
+    await speak(word[i], 0.5);
+    await new Promise(r=>setTimeout(r,400));
+  }
+  await new Promise(r=>setTimeout(r,400));
+  await speak(word, 0.55);
+}
+
+/* ================= HELPERS ================= */
+function show(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+function goHome(){ stopSpeech(); stopMic(); show("home"); }
+function addStar(n=1){
+  stars += n;
+  document.getElementById("starCount").textContent = stars;
+}
+function shuffle(a){
+  a = a.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+function confettiBurst(){
+  const colors = ["#F2A900","#2E9E58","#28324A","#D95757","#7FA8D9"];
+  for(let i=0;i<20;i++){
+    const c = document.createElement("div");
+    c.className = "confetti";
+    c.style.background = colors[i % colors.length];
+    c.style.left = Math.random()*100 + "vw";
+    c.style.animationDuration = (1.4 + Math.random()*1.4) + "s";
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(), 3000);
+  }
+}
+function drawHex(container, total, idx, doneSet){
+  const el = document.getElementById(container);
+  el.innerHTML = "";
+  for(let i=0;i<total;i++){
+    const h = document.createElement("div");
+    h.className = "hex" + (doneSet && doneSet.has(i) ? " done" : "") + (i===idx ? " now" : "");
+    el.appendChild(h);
+  }
+}
+function finish(msg){
+  document.getElementById("doneMsg").textContent = msg;
+  confettiBurst();
+  show("done");
+}
+function repeatMode(){
+  if(lastMode==="learn") startLearn();
+  else if(lastMode==="spell") startSpell();
+  else if(lastMode==="quiz") startQuiz();
+  else goHome();
+}
+
+/* ================= MODO 1: APRENDER ================= */
+let learnOrder = [], learnIdx = 0;
+function startLearn(){
+  lastMode = "learn";
+  learnOrder = WORDS.map((_,i)=>i);
+  learnIdx = 0;
+  show("learn");
+  renderLearn();
+}
+function renderLearn(){
+  const [w,m] = WORDS[learnOrder[learnIdx]];
+  document.getElementById("learnWord").textContent = w;
+  document.getElementById("learnMeaning").textContent = m;
+  document.getElementById("learnReveal").innerHTML = "";
+  document.getElementById("learnProg").textContent = `Palabra ${learnIdx+1} de ${WORDS.length}`;
+  drawHex("learnHex", WORDS.length, learnIdx, new Set(Array.from({length:learnIdx},(_,i)=>i)));
+  say(w);
+}
+function sayCurrentLearn(){ say(WORDS[learnOrder[learnIdx]][0]); }
+function sayCurrentLearnSlow(){ say(WORDS[learnOrder[learnIdx]][0], 0.4); }
+function spellCurrentLearn(){ spellOut(WORDS[learnOrder[learnIdx]][0], document.getElementById("learnReveal")); }
+function learnMove(dir){
+  const next = learnIdx + dir;
+  if(next < 0) return;
+  if(next >= WORDS.length){ addStar(5); finish("Repasaste las 50 palabras y ganaste 5 estrellas extra."); return; }
+  learnIdx = next;
+  renderLearn();
+}
+function openPicker(){
+  const grid = document.getElementById("wordGrid");
+  grid.innerHTML = "";
+  WORDS.forEach(([w], i)=>{
+    const b = document.createElement("button");
+    b.className = "word-chip" + (i===learnOrder[learnIdx] ? " current" : "");
+    b.textContent = w;
+    b.onclick = ()=>{ jumpToWord(i); };
+    grid.appendChild(b);
+  });
+  document.getElementById("pickerOverlay").classList.add("open");
+}
+function closePicker(){ document.getElementById("pickerOverlay").classList.remove("open"); }
+function jumpToWord(i){
+  closePicker();
+  learnIdx = learnOrder.indexOf(i);
+  renderLearn();
+}
+
+/* ================= VOZ → LETRAS (reconocimiento) ================= */
+const LETTER_SOUNDS = {
+  a:"a", hey:"a", ay:"a",
+  b:"b", be:"b", bee:"b",
+  c:"c", see:"c", sea:"c", si:"c",
+  d:"d", dee:"d", de:"d",
+  e:"e", ee:"e",
+  f:"f", ef:"f", eff:"f",
+  g:"g", gee:"g", ji:"g",
+  h:"h", aitch:"h", age:"h", eich:"h",
+  i:"i", eye:"i", ai:"i",
+  j:"j", jay:"j", jei:"j",
+  k:"k", kay:"k", que:"k", kei:"k",
+  l:"l", el:"l", ell:"l", elle:"l",
+  m:"m", em:"m",
+  n:"n", en:"n",
+  o:"o", oh:"o", owe:"o",
+  p:"p", pee:"p", pea:"p", pi:"p",
+  q:"q", queue:"q", cue:"q", kyu:"q",
+  r:"r", are:"r", ar:"r",
+  s:"s", es:"s", ess:"s",
+  t:"t", tea:"t", tee:"t", ti:"t",
+  u:"u", you:"u", yu:"u",
+  v:"v", vee:"v", vi:"v",
+  w:"w", doubleu:"w", doubleyou:"w",
+  x:"x", ex:"x", eks:"x",
+  y:"y", why:"y", wai:"y",
+  z:"z", zee:"z", zed:"z", zi:"z"
+};
+function transcriptToLetters(t){
+  t = t.toLowerCase()
+       .replace(/double\s*(u|you)/g," doubleu ")
+       .replace(/[^a-z\s]/g," ");
+  const tokens = t.split(/\s+/).filter(Boolean);
+  let letters = "", unknown = [];
+  for(const tok of tokens){
+    if(LETTER_SOUNDS[tok]) letters += LETTER_SOUNDS[tok];
+    else unknown.push(tok);
+  }
+  return {letters, tokens, unknown};
+}
+
+let recog = null, listening = false, voiceFinal = "";
+function micSupported(){
+  return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+}
+function toggleMic(){
+  if(!micSupported()){
+    const fb = document.getElementById("spellFeedback");
+    fb.textContent = "Este navegador no tiene dictado por voz. En iPhone usa Safari, o escribe la palabra.";
+    fb.className = "feedback no";
+    return;
+  }
+  listening ? stopMic() : startMic();
+}
+function startMic(){
+  stopSpeech();
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recog = new SR();
+  recog.lang = "en-US";
+  recog.continuous = true;
+  recog.interimResults = true;
+  voiceFinal = "";
+  const heard = document.getElementById("heardBox");
+  heard.className = "heard empty";
+  heard.textContent = "Te escucho: deletrea letra por letra";
+  recog.onresult = (e)=>{
+    let interim = "";
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal) voiceFinal += " " + e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    const {letters} = transcriptToLetters(voiceFinal + " " + interim);
+    if(letters){
+      heard.className = "heard";
+      heard.textContent = letters.toUpperCase().split("").join("-");
+    }
+  };
+  recog.onerror = (e)=>{
+    stopMicUI();
+    const fb = document.getElementById("spellFeedback");
+    if(e.error==="not-allowed"){
+      fb.textContent = "Necesito permiso para usar el micrófono. Actívalo en el navegador.";
+    } else {
+      fb.textContent = "No pude escuchar bien. Intenta de nuevo o escribe la palabra.";
+    }
+    fb.className = "feedback no";
+  };
+  recog.onend = ()=>{
+    if(listening){ stopMicUI(); gradeVoice(); }
+  };
+  listening = true;
+  const btn = document.getElementById("micBtn");
+  btn.classList.add("listening");
+  btn.textContent = "Listo, ya deletreé";
+  recog.start();
+}
+function stopMic(){
+  if(recog){ try{ recog.stop(); }catch(_){} }
+}
+function stopMicUI(){
+  listening = false;
+  const btn = document.getElementById("micBtn");
+  if(btn){ btn.classList.remove("listening"); btn.textContent = "Deletrear con mi voz"; }
+}
+function gradeVoice(){
+  const word = WORDS[spellOrder[spellIdx]][0];
+  const {letters, tokens} = transcriptToLetters(voiceFinal);
+  const fb = document.getElementById("spellFeedback");
+  if(!tokens.length){
+    fb.textContent = "No escuché nada. Acércate al micrófono e intenta otra vez.";
+    fb.className = "feedback no";
+    return;
+  }
+  if(!letters && tokens.join("") === word){
+    fb.textContent = "Escuché la palabra completa. Ahora deletréala: letra por letra, como en el concurso.";
+    fb.className = "feedback no";
+    return;
+  }
+  document.getElementById("heardBox").className = "heard";
+  document.getElementById("heardBox").textContent = letters.toUpperCase().split("").join("-");
+  applyAnswer(letters === word);
+}
+
+/* ================= MODO 2: DELETREAR ================= */
+let spellOrder = [], spellIdx = 0, spellTries = 0, spellDone = new Set();
+const ROUND = 10;
+function startSpell(){
+  lastMode = "spell";
+  spellOrder = shuffle(WORDS.map((_,i)=>i)).slice(0, ROUND);
+  spellIdx = 0; spellDone = new Set();
+  show("spell");
+  renderSpell();
+}
+function renderSpell(){
+  spellTries = 0;
+  stopMic(); stopMicUI(); voiceFinal = "";
+  const heard = document.getElementById("heardBox");
+  heard.className = "heard empty";
+  heard.textContent = "";
+  document.getElementById("micBtn").style.display = micSupported() ? "" : "none";
+  const card = document.getElementById("spellCard");
+  card.classList.remove("good","bad");
+  document.getElementById("spellInput").value = "";
+  document.getElementById("spellInput").disabled = false;
+  document.getElementById("spellFeedback").textContent = "";
+  document.getElementById("spellFeedback").className = "feedback";
+  document.getElementById("spellReveal").innerHTML = "";
+  const hint = document.getElementById("spellHint");
+  hint.style.visibility = "hidden";
+  hint.textContent = WORDS[spellOrder[spellIdx]][1];
+  document.getElementById("spellProg").textContent = `Palabra ${spellIdx+1} de ${ROUND}`;
+  document.getElementById("spellActions").innerHTML =
+    '<button class="btn btn-green" id="checkBtn" onclick="checkSpell()">Revisar</button>';
+  drawHex("spellHex", ROUND, spellIdx, spellDone);
+  say(WORDS[spellOrder[spellIdx]][0]);
+}
+function sayCurrentSpell(){ say(WORDS[spellOrder[spellIdx]][0]); }
+function sayCurrentSpellSlow(){ say(WORDS[spellOrder[spellIdx]][0], 0.4); }
+function showHint(){ document.getElementById("spellHint").style.visibility = "visible"; }
+function checkSpell(){
+  const word = WORDS[spellOrder[spellIdx]][0];
+  const val = document.getElementById("spellInput").value.trim().toLowerCase();
+  if(!val) return;
+  applyAnswer(val === word);
+}
+function applyAnswer(ok){
+  const word = WORDS[spellOrder[spellIdx]][0];
+  const card = document.getElementById("spellCard");
+  const fb = document.getElementById("spellFeedback");
+  if(ok){
+    card.classList.remove("bad"); card.classList.add("good");
+    fb.textContent = spellTries===0 ? "Perfecto, a la primera. Ganaste 2 estrellas." : "Muy bien. Ganaste 1 estrella.";
+    fb.className = "feedback ok";
+    addStar(spellTries===0 ? 2 : 1);
+    spellDone.add(spellIdx);
+    confettiBurst();
+    document.getElementById("spellInput").disabled = true;
+    document.getElementById("spellActions").innerHTML =
+      '<button class="btn btn-green" onclick="spellAdvance()">Siguiente →</button>';
+    say("Great job!", 0.8);
+  } else {
+    spellTries++;
+    card.classList.remove("bad"); void card.offsetWidth; card.classList.add("bad");
+    if(spellTries < 2){
+      fb.textContent = "Casi. Inténtalo otra vez: con tu voz o con el teclado.";
+      fb.className = "feedback no";
+      voiceFinal = "";
+      document.getElementById("spellInput").value = "";
+    } else {
+      fb.textContent = "Así se escribe. Escúchala y pasa a la siguiente.";
+      fb.className = "feedback no";
+      document.getElementById("spellInput").disabled = true;
+      spellOut(word, document.getElementById("spellReveal"));
+      document.getElementById("spellActions").innerHTML =
+        '<button class="btn btn-ghost" onclick="spellOut(WORDS[spellOrder[spellIdx]][0], document.getElementById(\'spellReveal\'))">Deletrear de nuevo</button>' +
+        '<button class="btn btn-green" onclick="spellAdvance()">Siguiente →</button>';
+    }
+  }
+}
+function spellAdvance(){
+  stopSpeech();
+  if(spellIdx + 1 >= ROUND){
+    finish(`Terminaste la ronda de deletreo. Acertaste ${spellDone.size} de ${ROUND}.`);
+    return;
+  }
+  spellIdx++;
+  renderSpell();
+}
+document.getElementById("spellInput").addEventListener("keydown", e=>{
+  if(e.key === "Enter" && !e.target.disabled) checkSpell();
+});
+
+/* ================= MODO 3: QUIZ ================= */
+let quizOrder = [], quizIdx = 0, quizScore = 0;
+const QROUND = 10;
+function startQuiz(){
+  lastMode = "quiz";
+  quizOrder = shuffle(WORDS.map((_,i)=>i)).slice(0, QROUND);
+  quizIdx = 0; quizScore = 0;
+  show("quiz");
+  renderQuiz();
+}
+function renderQuiz(){
+  const [w,m] = WORDS[quizOrder[quizIdx]];
+  document.getElementById("quizWord").textContent = w;
+  document.getElementById("quizProg").textContent = `Pregunta ${quizIdx+1} de ${QROUND}`;
+  document.getElementById("quizFeedback").textContent = "";
+  document.getElementById("quizNext").style.display = "none";
+  const wrongs = shuffle(WORDS.filter((x,i)=>i!==quizOrder[quizIdx]).map(x=>x[1])).slice(0,3);
+  const opts = shuffle([m, ...wrongs]);
+  const box = document.getElementById("quizOptions");
+  box.innerHTML = "";
+  opts.forEach(o=>{
+    const b = document.createElement("button");
+    b.className = "opt";
+    b.textContent = o;
+    b.onclick = ()=>answerQuiz(b, o===m);
+    box.appendChild(b);
+  });
+  say(w);
+}
+function sayCurrentQuiz(){ say(WORDS[quizOrder[quizIdx]][0]); }
+function answerQuiz(btn, ok){
+  const correct = WORDS[quizOrder[quizIdx]][1];
+  document.querySelectorAll(".opt").forEach(b=>{
+    b.disabled = true;
+    if(b.textContent === correct) b.classList.add("correct");
+  });
+  const fb = document.getElementById("quizFeedback");
+  if(ok){
+    quizScore++;
+    addStar(1);
+    fb.textContent = "Correcto.";
+    fb.className = "feedback ok";
+    confettiBurst();
+  } else {
+    btn.classList.add("wrong");
+    fb.textContent = "Esa no era. La respuesta en verde es la correcta.";
+    fb.className = "feedback no";
+  }
+  document.getElementById("quizNext").style.display = "inline-block";
+}
+function quizAdvance(){
+  if(quizIdx + 1 >= QROUND){
+    finish(`Quiz terminado. Acertaste ${quizScore} de ${QROUND} significados.`);
+    return;
+  }
+  quizIdx++;
+  renderQuiz();
+}
+</script>
+</body>
+</html>

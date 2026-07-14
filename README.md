@@ -19,8 +19,12 @@ La app tiene cuatro formas de practicar:
   en español entre cuatro opciones.
 - **El abecedario** — las 26 letras A–Z con su nombre en inglés, para oír cada
   una y aprender a decirlas.
+- **Mi progreso** — estrellas ganadas, palabras escuchadas, aciertos en
+  Deletrear y en Quiz. Incluye un botón para reiniciar las estrellas.
 
-Un sistema de estrellas y confeti premia los aciertos.
+Un sistema de estrellas y confeti premia los aciertos. Las estrellas y las
+estadísticas se guardan en el navegador (por dispositivo, no en la nube), así
+que se conservan al cerrar y volver a abrir.
 
 ## Pronunciación
 

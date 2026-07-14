@@ -23,9 +23,13 @@ en `index.html`. Publicada en GitHub Pages.
   español (A→ei, J→jei, W→dobol-iu, Z→zi…). La función `pronounce(word)` arma
   el texto tipo `jei-iu-es-ti`. Si hay que ajustar cómo suena una letra, se
   cambia aquí y afecta a toda la app.
-- Cuatro modos, cada uno en su `<section class="screen">` con su bloque de
-  funciones: `startLearn`/`renderLearn`, `startSpell`/`renderSpell`,
-  `startQuiz`/`renderQuiz`, `startAlphabet`/`renderAlphabet`.
+- Cinco pantallas, cada una en su `<section class="screen">`: los cuatro modos
+  (`startLearn`/`renderLearn`, `startSpell`/`renderSpell`, `startQuiz`/`renderQuiz`,
+  `startAlphabet`/`renderAlphabet`) más `startProgress`/`renderProgress`.
+- **Estado guardado** (`localStorage`, clave `spellingBee.v1`): objeto con
+  `stars` y `stats` (`learnHeard`, `spellCorrect`, `spellFirstTry`,
+  `quizCorrect`). `loadState()` al arrancar, `saveState()` en cada cambio.
+  Es por dispositivo/navegador, no en la nube.
 - Voz: `speak()` (promesa, una frase) y `say()` (cancela y habla). Tienen
   arreglos para iOS Safari (`primeSpeech`, `liveUtterances`). **No tocar esa
   lógica de voz sin preguntar**, es frágil en iPhone.
@@ -34,8 +38,14 @@ en `index.html`. Publicada en GitHub Pages.
 
 - La pronunciación se escribe con el **nombre en inglés de cada letra**, en
   grafía española. La **W** quedó como `dobol-iu` (aprobado por Walter).
-- Sin base de datos ni backend: el conteo de estrellas se reinicia al recargar,
-  a propósito.
+- Las estrellas y estadísticas **se guardan** en `localStorage`. El botón
+  "Reiniciar estrellas" (pantalla Mi progreso) pone `stars` en 0 pero **no**
+  borra las estadísticas.
+- Audio: al **entrar** a Escuchar y aprender la app **no** dice la palabra sola
+  (evita que se corte la primera letra al presionar "Escuchar"); ella la dispara
+  con el botón. El margen entre `cancel()` y `speak()` en `say()` es de 250 ms
+  por la misma razón. Al navegar entre palabras sí se pronuncia automáticamente.
+- En Aprender, "Anterior" se deshabilita en la primera palabra.
 
 ## Probar
 

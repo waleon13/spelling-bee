@@ -106,6 +106,17 @@
   .btn-honey{background:var(--honey)}
   .btn-green{background:var(--green)}
   .btn-ghost{background:var(--card);color:var(--ink);border-color:var(--line);box-shadow:var(--shadow)}
+  .btn:disabled{opacity:.4;cursor:default;filter:none}
+
+  /* ---------- Mi progreso ---------- */
+  .stat-list{display:grid;text-align:left}
+  .stat-row{
+    display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+    padding:14px 4px;border-bottom:1px solid var(--line);
+  }
+  .stat-row:last-child{border-bottom:none}
+  .stat-label{font-family:'Nunito';font-weight:800;color:var(--ink);font-size:1rem}
+  .stat-value{font-family:'Baloo 2';font-weight:800;color:var(--honey);font-size:1.45rem;white-space:nowrap}
 
   .nav-row{display:flex;justify-content:center;gap:8px;margin-top:16px;flex-wrap:wrap}
 
@@ -253,6 +264,10 @@
         <span class="chip" style="background:#7FA8D9"></span>
         <span><h3>El abecedario</h3><p>Aprende a decir cada letra en inglés</p></span>
       </button>
+      <button class="mode-btn" onclick="startProgress()">
+        <span class="chip" style="background:var(--muted)"></span>
+        <span><h3>Mi progreso</h3><p>Mira tus estrellas y cuánto has practicado</p></span>
+      </button>
     </div>
   </section>
 
@@ -274,7 +289,7 @@
       </div>
       <div class="reveal" id="learnReveal" aria-live="polite"></div>
       <div class="nav-row">
-        <button class="btn btn-ghost" onclick="learnMove(-1)">← Anterior</button>
+        <button class="btn btn-ghost" id="learnPrev" onclick="learnMove(-1)">← Anterior</button>
         <button class="btn btn-green" onclick="learnMove(1)">Siguiente →</button>
       </div>
     </div>
@@ -323,6 +338,20 @@
       <div class="options" id="quizOptions"></div>
       <div class="feedback" id="quizFeedback" aria-live="polite"></div>
       <div class="nav-row"><button class="btn btn-green" id="quizNext" style="display:none" onclick="quizAdvance()">Siguiente →</button></div>
+    </div>
+  </section>
+
+  <!-- ============ MI PROGRESO ============ -->
+  <section id="progress" class="screen">
+    <div class="topbar">
+      <button class="back" onclick="goHome()">← Menú</button>
+      <span class="progress">Mi progreso</span>
+    </div>
+    <div class="card">
+      <div class="stat-list" id="statList"></div>
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="resetStars()">Reiniciar estrellas</button>
+      </div>
     </div>
   </section>
 
@@ -393,7 +422,22 @@ function pronounce(word){
   return word.toLowerCase().split("").map(l=>LETTER_SOUND[l]||l).join("-");
 }
 
+/* ---- Estado que se guarda en el navegador (localStorage) ---- */
+const STORE_KEY = "spellingBee.v1";
 let stars = 0;
+let stats = { learnHeard:0, spellCorrect:0, spellFirstTry:0, quizCorrect:0 };
+function loadState(){
+  try{
+    const d = JSON.parse(localStorage.getItem(STORE_KEY) || "{}");
+    stars = d.stars || 0;
+    if(d.stats) stats = Object.assign(stats, d.stats);
+  }catch(e){ /* si el navegador bloquea el almacenamiento, seguimos sin guardar */ }
+}
+function saveState(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify({stars, stats})); }catch(e){}
+}
+loadState();
+document.getElementById("starCount").textContent = stars;
 let lastMode = null;
 
 /* ================= VOZ (síntesis) — con arreglos para iOS Safari ================= */
@@ -436,12 +480,13 @@ function speak(text, rate=0.6){
     speechSynthesis.speak(u);
   });
 }
-/* Cancelar y hablar de inmediato recorta el audio en iOS:
-   dejamos una pausa breve entre ambos. */
+/* Cancelar y hablar de inmediato recorta el audio (se come la primera letra),
+   sobre todo en iOS. Dejamos una pausa entre cancelar y hablar. Subida de
+   150 a 250 ms para que no se pierda el inicio de la palabra. */
 function say(text, rate=0.6){
   if(!hasTTS) return;
   speechSynthesis.cancel();
-  setTimeout(()=>speak(text, rate), 150);
+  setTimeout(()=>speak(text, rate), 250);
 }
 function stopSpeech(){ if(hasTTS) speechSynthesis.cancel(); }
 
@@ -470,6 +515,7 @@ function goHome(){ stopSpeech(); show("home"); }
 function addStar(n=1){
   stars += n;
   document.getElementById("starCount").textContent = stars;
+  saveState();
 }
 function shuffle(a){
   a = a.slice();
@@ -513,26 +559,32 @@ function repeatMode(){
 }
 
 /* ================= MODO 1: APRENDER ================= */
-let learnOrder = [], learnIdx = 0;
+let learnOrder = [], learnIdx = 0, learnHeardThisWord = false;
 function startLearn(){
   lastMode = "learn";
   learnOrder = shuffle(WORDS.map((_,i)=>i));
   learnIdx = 0;
   show("learn");
-  renderLearn();
+  renderLearn(false); // al entrar no decimos la palabra sola: ella presiona "Escuchar"
 }
-function renderLearn(){
+function renderLearn(autoSay=true){
   const [w,m] = WORDS[learnOrder[learnIdx]];
   document.getElementById("learnWord").textContent = w;
   document.getElementById("learnMeaning").textContent = m;
   document.getElementById("learnPron").innerHTML = "Se dice: <b>" + pronounce(w) + "</b>";
   document.getElementById("learnReveal").innerHTML = "";
   document.getElementById("learnProg").textContent = `Palabra ${learnIdx+1} de ${WORDS.length}`;
+  document.getElementById("learnPrev").disabled = (learnIdx === 0);
+  learnHeardThisWord = false;
   drawHex("learnHex", WORDS.length, learnIdx, new Set(Array.from({length:learnIdx},(_,i)=>i)));
-  say(w);
+  if(autoSay) say(w);
 }
-function sayCurrentLearn(){ say(WORDS[learnOrder[learnIdx]][0]); }
-function sayCurrentLearnSlow(){ say(WORDS[learnOrder[learnIdx]][0], 0.4); }
+/* Cuenta la palabra como "escuchada" solo la primera vez en esta visita. */
+function countLearnHeard(){
+  if(!learnHeardThisWord){ learnHeardThisWord = true; stats.learnHeard++; saveState(); }
+}
+function sayCurrentLearn(){ countLearnHeard(); say(WORDS[learnOrder[learnIdx]][0]); }
+function sayCurrentLearnSlow(){ countLearnHeard(); say(WORDS[learnOrder[learnIdx]][0], 0.4); }
 function spellCurrentLearn(){ spellOut(WORDS[learnOrder[learnIdx]][0], document.getElementById("learnReveal")); }
 function learnMove(dir){
   const next = learnIdx + dir;
@@ -610,6 +662,9 @@ function applyAnswer(ok){
     fb.textContent = spellTries===0 ? "Perfecto, a la primera. Ganaste 2 estrellas." : "Muy bien. Ganaste 1 estrella.";
     fb.className = "feedback ok";
     addStar(spellTries===0 ? 2 : 1);
+    stats.spellCorrect++;
+    if(spellTries===0) stats.spellFirstTry++;
+    saveState();
     spellDone.add(spellIdx);
     confettiBurst();
     document.getElementById("spellInput").disabled = true;
@@ -689,6 +744,8 @@ function answerQuiz(btn, ok){
   if(ok){
     quizScore++;
     addStar(1);
+    stats.quizCorrect++;
+    saveState();
     fb.textContent = "Correcto.";
     fb.className = "feedback ok";
     confettiBurst();
@@ -733,6 +790,30 @@ async function sayWholeAlphabet(){
     await speak(l, 0.7);
     await new Promise(r=>setTimeout(r,250));
   }
+}
+
+/* ================= MI PROGRESO ================= */
+function startProgress(){
+  show("progress");
+  renderProgress();
+}
+function renderProgress(){
+  const filas = [
+    ["Estrellas", stars],
+    ["Palabras escuchadas (Aprender)", stats.learnHeard],
+    ["Deletreadas bien", stats.spellCorrect + " (" + stats.spellFirstTry + " a la primera)"],
+    ["Aciertos en Quiz", stats.quizCorrect]
+  ];
+  document.getElementById("statList").innerHTML = filas.map(([l,v])=>
+    `<div class="stat-row"><span class="stat-label">${l}</span><span class="stat-value">${v}</span></div>`
+  ).join("");
+}
+function resetStars(){
+  if(!confirm("¿Reiniciar las estrellas a cero? Esto no se puede deshacer.")) return;
+  stars = 0;
+  document.getElementById("starCount").textContent = stars;
+  saveState();
+  renderProgress();
 }
 </script>
 </body>

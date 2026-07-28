@@ -253,7 +253,11 @@
   <section id="home" class="screen active">
     <div class="hero">
       <h2>Hola</h2>
-      <p>Tienes <strong>50 palabras</strong> para practicar.<br>Elige cómo quieres jugar hoy:</p>
+      <p>Tienes <strong id="homeCount">50 palabras</strong> para practicar.<br>Elige cómo quieres jugar hoy:</p>
+      <div class="nav-row">
+        <button class="btn" id="lvl1" onclick="setLevel(1)">Nivel 1</button>
+        <button class="btn" id="lvl2" onclick="setLevel(2)">Nivel 2</button>
+      </div>
     </div>
     <div class="modes">
       <button class="mode-btn" onclick="startLearn()">
@@ -404,8 +408,10 @@
 </div>
 
 <script>
-/* ================= DATA ================= */
-const WORDS = [
+/* ================= DATA =================
+   Dos listas separadas. La niña elige el nivel en la portada y todos los modos
+   trabajan sobre `WORDS`, que apunta a la lista del nivel activo. */
+const WORDS_N1 = [
   ["glad","contento / feliz"],["of","de"],["job","trabajo"],["wipe","limpiar"],["close","cerrar / cerca"],
   ["dig","cavar"],["does","hace (él o ella)"],["hug","abrazo"],["pile","montón"],["cute","lindo / linda"],
   ["jam","mermelada"],["cake","pastel"],["rest","descansar"],["rake","rastrillo"],["those","esos / esas"],
@@ -417,6 +423,26 @@ const WORDS = [
   ["plum","ciruela"],["been","estado / sido"],["grape","uva"],["rose","rosa"],["tape","cinta"],
   ["said","dijo"],["wet","mojado"],["prize","premio"],["pole","poste"],["fin","aleta"]
 ];
+
+/* Segunda lámina (2nd Grade Spelling Bee Words). Trae 52 casillas pero
+   "family" viene repetida en el original, así que son 51 palabras. */
+const WORDS_N2 = [
+  ["ago","hace (tiempo atrás)"],["animal","animal"],["away","lejos / fuera"],["barn","granero"],["bright","brillante"],
+  ["brother","hermano"],["clock","reloj"],["cold","frío"],["count","contar"],["deer","venado"],
+  ["dress","vestido"],["drum","tambor"],["eight","ocho"],["eleven","once"],["even","incluso / par"],
+  ["family","familia"],["feed","alimentar"],["friend","amigo / amiga"],["grin","sonrisa"],["happy","feliz"],
+  ["high","alto"],["house","casa"],["jump","saltar"],["kiss","beso"],["light","luz / ligero"],
+  ["lock","cerradura / cerrar"],["look","mirar"],["loud","ruidoso"],["lunch","almuerzo"],["mess","desorden"],
+  ["might","podría"],["new","nuevo / nueva"],["night","noche"],["nine","nueve"],["path","camino / sendero"],
+  ["pool","piscina"],["rabbit","conejo"],["rock","roca"],["seven","siete"],["speed","velocidad"],
+  ["stamp","estampilla"],["stone","piedra"],["summer","verano"],["treat","golosina"],["trick","truco"],
+  ["tune","melodía"],["twelve","doce"],["upon","sobre / encima de"],["winter","invierno"],["yard","patio"],
+  ["year","año"]
+];
+
+/* Lista activa. `level` se guarda junto con las estrellas y estadísticas. */
+let level = 1;
+let WORDS = WORDS_N1;
 
 /* Nombre de cada letra en inglés, escrito para leerlo en español.
    Ej: "just" -> jei-iu-es-ti */
@@ -439,13 +465,28 @@ function loadState(){
     const d = JSON.parse(localStorage.getItem(STORE_KEY) || "{}");
     stars = d.stars || 0;
     if(d.stats) stats = Object.assign(stats, d.stats);
+    if(d.level === 2) level = 2;
   }catch(e){ /* si el navegador bloquea el almacenamiento, seguimos sin guardar */ }
 }
 function saveState(){
-  try{ localStorage.setItem(STORE_KEY, JSON.stringify({stars, stats})); }catch(e){}
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify({stars, stats, level})); }catch(e){}
 }
 loadState();
 document.getElementById("starCount").textContent = stars;
+
+/* Cambia la lista activa y marca en la portada cuál nivel está elegido. */
+function setLevel(n){
+  level = n;
+  WORDS = (n === 2) ? WORDS_N2 : WORDS_N1;
+  saveState();
+  renderLevel();
+}
+function renderLevel(){
+  document.getElementById("lvl1").className = "btn " + (level===1 ? "btn-honey" : "btn-ghost");
+  document.getElementById("lvl2").className = "btn " + (level===2 ? "btn-honey" : "btn-ghost");
+  document.getElementById("homeCount").textContent = WORDS.length + " palabras";
+}
+setLevel(level);
 let lastMode = null;
 
 /* ================= VOZ (síntesis) — con arreglos para iOS Safari ================= */
@@ -615,7 +656,7 @@ function spellCurrentLearn(){ spellOut(WORDS[learnOrder[learnIdx]][0], document.
 function learnMove(dir){
   const next = learnIdx + dir;
   if(next < 0) return;
-  if(next >= WORDS.length){ addStar(5); finish("Repasaste las 50 palabras y ganaste 5 estrellas extra."); return; }
+  if(next >= WORDS.length){ addStar(5); finish(`Repasaste las ${WORDS.length} palabras y ganaste 5 estrellas extra.`); return; }
   learnIdx = next;
   renderLearn();
 }

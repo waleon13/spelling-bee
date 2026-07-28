@@ -1,15 +1,28 @@
 # Mi Spelling Bee
 
 Aplicación web de una sola página para practicar el concurso de deletreo
-(*spelling bee*) de 1.º y 2.º grado. Son 50 palabras en inglés con su
-significado en español. Funciona en el teléfono y en la computadora, sin
-instalar nada.
+(*spelling bee*) de 1.º y 2.º grado. Son 101 palabras en inglés con su
+significado en español, repartidas en dos niveles. Funciona en el teléfono y en
+la computadora, sin instalar nada.
 
 Publicada en GitHub Pages: <https://waleon13.github.io/spelling-bee/>
 
+## Niveles
+
+En la portada se elige con qué lista practicar:
+
+- **Nivel 1** — las 50 palabras de la primera lámina.
+- **Nivel 2** — las 51 palabras de la segunda lámina.
+
+Los tres modos de palabras (Escuchar y aprender, Deletrear y Quiz) trabajan
+sobre el nivel elegido, así que una ronda solo saca palabras de esa lista. El
+abecedario no cambia, y Mi progreso suma lo de los dos niveles juntos: las
+estrellas y las estadísticas no se llevan por separado. El nivel queda guardado,
+así que al volver a abrir la app sigue el último que se usó.
+
 ## Modos
 
-La app tiene cuatro formas de practicar:
+La app tiene cinco formas de practicar:
 
 - **Escuchar y aprender** — muestra cada palabra, la dice en voz alta, da su
   significado y su pronunciación letra por letra.
@@ -22,9 +35,9 @@ La app tiene cuatro formas de practicar:
 - **Mi progreso** — estrellas ganadas, palabras escuchadas, aciertos en
   Deletrear y en Quiz. Incluye un botón para reiniciar las estrellas.
 
-Un sistema de estrellas y confeti premia los aciertos. Las estrellas y las
-estadísticas se guardan en el navegador (por dispositivo, no en la nube), así
-que se conservan al cerrar y volver a abrir.
+Un sistema de estrellas y confeti premia los aciertos. Las estrellas, las
+estadísticas y el nivel elegido se guardan en el navegador (por dispositivo, no
+en la nube), así que se conservan al cerrar y volver a abrir.
 
 ## Pronunciación
 
@@ -49,8 +62,10 @@ arranca después de tocar la pantalla una vez; la app ya lo maneja.
 ## Archivos
 
 - `index.html` — toda la aplicación (HTML, CSS y JavaScript en un solo archivo).
-- `spelling_bee_words_1st-_and_2nd-___1.jfif` — imagen original con la lista de
-  las 50 palabras.
+- `spelling_bee_words_1st-_and_2nd-___1.jfif` — lámina original con las 50
+  palabras del Nivel 1.
+- `Vocabulario 2.jpeg` — lámina con las palabras del Nivel 2. Trae 52 casillas,
+  pero `family` viene repetida en el original, así que son 51 palabras.
 
 ## Tecnología
 

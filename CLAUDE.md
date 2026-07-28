@@ -60,6 +60,8 @@ niveles). Todo vive en `index.html`. Publicada en GitHub Pages.
   "Deletrear") se cortaba la primera letra. `spellOut` usa `settleSpeech()`, que
   espera a que el motor quede realmente libre (sondeando, con tope de seguridad)
   antes de decir la primera letra, en vez de una pausa fija corta.
+- Audio: al pasar de palabra, `spellAdvance()` y `quizAdvance()` llaman
+  `stopSpeech()`, para que el audio no siga sonando sobre la pantalla final.
 - En Aprender, "Anterior" se deshabilita en la primera palabra.
 - Las palabras van en **dos niveles separados**, no en una sola lista de 101
   (aprobado por Walter). Así "Escuchar y aprender" sigue siendo una sesión de 50
@@ -67,6 +69,21 @@ niveles). Todo vive en `index.html`. Publicada en GitHub Pages.
   estadísticas sí son globales, no se llevan por nivel.
 - Los dos botones de nivel de la portada reutilizan `.btn-honey` (activo) y
   `.btn-ghost` (inactivo) dentro de un `.nav-row`; no se agregó CSS nuevo.
+- Las 5 estrellas del final de "Escuchar y aprender" **solo se ganan si se
+  abrieron todas las palabras** del nivel. El `Set` `learnSeen` (se llena en
+  `renderLearn()`, se vacía en `startLearn()`) lleva la cuenta. Antes se podía
+  saltar a la última con "Lista" y cobrarlas de una; si faltan palabras, la
+  pantalla final lo dice con un mensaje amable y no da estrellas.
+- El selector "Elige una palabra" cierra con **Escape**, atrapa el tabulador
+  dentro del diálogo y devuelve el foco al botón "Lista" que lo abrió
+  (`pickerVolverA`). Lleva `aria-modal="true"`.
+- Accesibilidad de la portada: los botones de modo usan
+  `<span class="mode-title">` y `<span class="mode-desc">` — **no** `<h3>`/`<p>`,
+  que dentro de un `<button>` es HTML inválido. El `.mode-desc` hereda la
+  tipografía del `button` (Arial), igual que antes; es intencional.
+- El contador de estrellas no lleva `aria-label` (tapaba el número). El ★ va con
+  `aria-hidden` y la palabra "estrellas ganadas" va en un `<span class="sr-only">`.
+  `.sr-only` es la única clase agregada por accesibilidad; no cambia nada visual.
 
 ## Probar
 

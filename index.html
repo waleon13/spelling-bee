@@ -46,6 +46,11 @@
     padding:8px 16px;font-weight:800;font-size:1rem;box-shadow:var(--shadow);
   }
   .stars b{color:var(--honey)}
+  /* Texto solo para lectores de pantalla: no se ve, pero sí se lee. */
+  .sr-only{
+    position:absolute;width:1px;height:1px;overflow:hidden;
+    clip:rect(0 0 0 0);white-space:nowrap;border:0;
+  }
 
   /* ---------- Screens ---------- */
   .screen{display:none}
@@ -72,8 +77,10 @@
   .mode-btn:active{background:#F6F9FD}
   .mode-btn:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid var(--honey);outline-offset:2px}
   .chip{width:12px;height:12px;border-radius:4px;flex-shrink:0}
-  .mode-btn h3{font-size:1.1rem}
-  .mode-btn p{font-weight:700;color:var(--muted);font-size:.85rem}
+  /* Antes eran <h3> y <p> dentro del <button>, que es HTML inválido.
+     Ahora son <span> con estas clases; se ven exactamente igual. */
+  .mode-btn .mode-title{display:block;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:1.1rem}
+  .mode-btn .mode-desc{display:block;font-weight:700;color:var(--muted);font-size:.85rem}
 
   /* ---------- Common in-mode ---------- */
   .topbar{display:flex;align-items:center;gap:8px;margin-bottom:12px}
@@ -244,9 +251,10 @@
   <header>
     <div class="brand">
       <span class="bee" aria-hidden="true">🐝</span>
-      <h1>Mi Spelling Bee<small>A practicar, campeona</small></h1>
+      <h1>Mi Spelling Bee
+        <small>A practicar, campeona</small></h1>
     </div>
-    <div class="stars" aria-label="Estrellas ganadas"><b>★</b> <span id="starCount">0</span></div>
+    <div class="stars"><b aria-hidden="true">★</b> <span id="starCount">0</span><span class="sr-only"> estrellas ganadas</span></div>
   </header>
 
   <!-- ============ HOME ============ -->
@@ -262,23 +270,23 @@
     <div class="modes">
       <button class="mode-btn" onclick="startLearn()">
         <span class="chip" style="background:var(--honey)"></span>
-        <span><h3>Escuchar y aprender</h3><p>Oye cada palabra, su deletreo y su significado</p></span>
+        <span><span class="mode-title">Escuchar y aprender</span><span class="mode-desc">Oye cada palabra, su deletreo y su significado</span></span>
       </button>
       <button class="mode-btn" onclick="startSpell()">
         <span class="chip" style="background:var(--green)"></span>
-        <span><h3>Deletrear</h3><p>Escucha la palabra y escríbela sin verla</p></span>
+        <span><span class="mode-title">Deletrear</span><span class="mode-desc">Escucha la palabra y escríbela sin verla</span></span>
       </button>
       <button class="mode-btn" onclick="startQuiz()">
         <span class="chip" style="background:var(--ink)"></span>
-        <span><h3>Quiz de significados</h3><p>Qué significa la palabra en español</p></span>
+        <span><span class="mode-title">Quiz de significados</span><span class="mode-desc">Qué significa la palabra en español</span></span>
       </button>
       <button class="mode-btn" onclick="startAlphabet()">
         <span class="chip" style="background:#7FA8D9"></span>
-        <span><h3>El abecedario</h3><p>Aprende a decir cada letra en inglés</p></span>
+        <span><span class="mode-title">El abecedario</span><span class="mode-desc">Aprende a decir cada letra en inglés</span></span>
       </button>
       <button class="mode-btn" onclick="startProgress()">
         <span class="chip" style="background:var(--muted)"></span>
-        <span><h3>Mi progreso</h3><p>Mira tus estrellas y cuánto has practicado</p></span>
+        <span><span class="mode-title">Mi progreso</span><span class="mode-desc">Mira tus estrellas y cuánto has practicado</span></span>
       </button>
     </div>
   </section>
@@ -398,7 +406,7 @@
 
 <!-- ============ SELECTOR DE PALABRAS ============ -->
 <div class="overlay" id="pickerOverlay" onclick="if(event.target===this)closePicker()">
-  <div class="picker" role="dialog" aria-label="Elegir palabra">
+  <div class="picker" role="dialog" aria-modal="true" aria-label="Elegir palabra">
     <div class="picker-head">
       <h3>Elige una palabra</h3>
       <button class="close-picker" onclick="closePicker()" aria-label="Cerrar">✕</button>
@@ -625,11 +633,15 @@ function repeatMode(){
 }
 
 /* ================= MODO 1: APRENDER ================= */
-let learnOrder = [], learnIdx = 0, learnHeardThisWord = false;
+/* `learnSeen` guarda qué palabras se abrieron en esta visita. Sirve para que
+   las 5 estrellas del final solo se ganen si de verdad se repasaron todas
+   (antes se podía saltar a la última con "Lista" y cobrarlas de una). */
+let learnOrder = [], learnIdx = 0, learnHeardThisWord = false, learnSeen = new Set();
 function startLearn(){
   lastMode = "learn";
   learnOrder = shuffle(WORDS.map((_,i)=>i));
   learnIdx = 0;
+  learnSeen = new Set();
   show("learn");
   renderLearn();
 }
@@ -644,6 +656,7 @@ function renderLearn(){
   document.getElementById("learnProg").textContent = `Palabra ${learnIdx+1} de ${WORDS.length}`;
   document.getElementById("learnPrev").disabled = (learnIdx === 0);
   learnHeardThisWord = false;
+  learnSeen.add(learnIdx);
   drawHex("learnHex", WORDS.length, learnIdx, new Set(Array.from({length:learnIdx},(_,i)=>i)));
 }
 /* Cuenta la palabra como "escuchada" solo la primera vez en esta visita. */
@@ -656,7 +669,18 @@ function spellCurrentLearn(){ spellOut(WORDS[learnOrder[learnIdx]][0], document.
 function learnMove(dir){
   const next = learnIdx + dir;
   if(next < 0) return;
-  if(next >= WORDS.length){ addStar(5); finish(`Repasaste las ${WORDS.length} palabras y ganaste 5 estrellas extra.`); return; }
+  if(next >= WORDS.length){
+    const faltan = WORDS.length - learnSeen.size;
+    if(faltan === 0){
+      addStar(5);
+      finish(`Repasaste las ${WORDS.length} palabras y ganaste 5 estrellas extra.`);
+    } else {
+      finish(faltan === 1
+        ? "Te faltó 1 palabra. Repásalas todas y ganas 5 estrellas extra."
+        : `Te faltaron ${faltan} palabras. Repásalas todas y ganas 5 estrellas extra.`);
+    }
+    return;
+  }
   learnIdx = next;
   renderLearn();
 }
@@ -673,8 +697,30 @@ function openPicker(){
     grid.appendChild(b);
   });
   document.getElementById("pickerOverlay").classList.add("open");
+  pickerVolverA = document.activeElement;
+  const cerrar = document.querySelector("#pickerOverlay .close-picker");
+  if(cerrar) cerrar.focus();
 }
-function closePicker(){ document.getElementById("pickerOverlay").classList.remove("open"); }
+function closePicker(){
+  document.getElementById("pickerOverlay").classList.remove("open");
+  /* Devolvemos el foco al botón que abrió el diálogo ("Lista"). */
+  if(pickerVolverA && pickerVolverA.focus) pickerVolverA.focus();
+  pickerVolverA = null;
+}
+/* Con el diálogo abierto: Escape lo cierra y el tabulador da vueltas dentro
+   de él, en vez de irse a los botones de la pantalla que quedó atrás. */
+let pickerVolverA = null;
+function pickerAbierto(){ return document.getElementById("pickerOverlay").classList.contains("open"); }
+document.addEventListener("keydown", e=>{
+  if(!pickerAbierto()) return;
+  if(e.key === "Escape"){ e.preventDefault(); closePicker(); return; }
+  if(e.key !== "Tab") return;
+  const focos = document.getElementById("pickerOverlay").querySelectorAll("button");
+  if(!focos.length) return;
+  const primero = focos[0], ultimo = focos[focos.length-1];
+  if(e.shiftKey && document.activeElement === primero){ e.preventDefault(); ultimo.focus(); }
+  else if(!e.shiftKey && document.activeElement === ultimo){ e.preventDefault(); primero.focus(); }
+});
 function jumpToWord(i){
   closePicker();
   learnIdx = learnOrder.indexOf(i);
@@ -835,6 +881,7 @@ function answerQuiz(btn, ok){
   document.getElementById("quizNext").style.display = "inline-block";
 }
 function quizAdvance(){
+  stopSpeech();
   if(quizIdx + 1 >= QROUND){
     finish(`Quiz terminado. Acertaste ${quizScore} de ${QROUND} significados.`);
     return;
